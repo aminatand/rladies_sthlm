@@ -1,0 +1,96 @@
+---
+title: "ada_C()NF 4, Stockholm"
+author: "NDIAYE Aminata"
+date: "15 June 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, message=F, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())
+#install.packages("readxl")
+library(readxl)
+#install.packages("dplyr")
+library(dplyr)
+#install.packages("ggplot2")
+library(ggplot2)
+#install.packages("data.table")
+library(data.table)
+#install.packages("knitr")
+library(knitr) #for kable
+```
+
+### An example of Markdown magic: Presentation of R-ladies groups evolution arounf the world
+
+#####Summary and descriptive statistics
+
+The data _R-ladies groups_ from R-ladies global meetup page has 159 observations and 6 variables. It presents the 159 different cities around the world where R-ladies group are organized with their creation date and the number of members as showed in the summary below:
+
+```{r data, warning=F}
+#Change pathway to data to run it in another computer
+dataRladies <- read_excel("Z:/Shiny/R_ladies/ADACONF/Data_Rladiesgroups.xlsx")
+
+kable(head(dataRladies))
+
+#Put some (char) vars into categorical 
+dataRladies[,c(1:3,6)] <- lapply(dataRladies[,c(1:3,6)], function(x)  factor(x))
+
+dim(dataRladies)
+
+kable(summary(dataRladies))
+```
+
+
+The code that prints these lines is not displayed, but you see the results because I have added **_echo=F_** to this chunck.
+
+```{r data2, echo=F}
+print("How many countries participate?"); length(with(dataRladies, table(Country)))
+print("How many states in the US are represented?"); length(with(dataRladies[dataRladies$Region=="USA",], table(State)))
+
+#*create var Year of creation
+dataRladies$year_creation <- year(dataRladies$dt_created)
+
+#Use of dplyr to do some data management: count number of members through the years
+rladies_sorted <- arrange(dataRladies, Region, year_creation)
+
+final_data <- rladies_sorted %>% 
+  group_by(Region) %>% 
+  mutate(Members = cumsum(Nb_members))
+
+
+#*keep total number of members per year for plot
+data_plot <- final_data %>% 
+  group_by(Region, year_creation) %>% 
+  slice(which.max(Members)) %>% 
+  select(Region, year_creation, Members)
+
+```
+
+
+####Graphical presentation of R-ladies data using Base R
+
+```{r plot, echo=FALSE, message=F, warning=F}
+barplot(data_plot$Members, xlab = "Number of members per Region per year", col=data_plot$Region)
+#leg.cols <- as.numeric(as.factor(levels(data_plot$Region)))
+legend("topleft", legend=levels(data_plot$Region), fill=T, col=levels(data_plot$Region), ncol=3, cex=.65, bty="n")
+
+
+```
+
+####Graphical presentation of R-ladies data using Ggplot
+
+The following plot gives more information on the data. We can for instance be interested in looking at the evolution of R-ladies group through the years in the different regions and clearly see how it started in the USA in 2012 and quickly grew in USA and Europe before slowly starting in Asia and Australia 4 years after (in 2016) its start.
+
+
+```{r plot1, echo=FALSE, message=F, warning=F}
+
+   ggplot(data_plot, aes(x=year_creation, y=Members))+ geom_point(aes(color=Region, size=Members))
+
+```
+
+
+**PLEASE MAKE YOUR FIRST MARKDOWN DOCUMENT RIGHT AFTER THIS DAY, YOU WILL NEVER STOP!**
